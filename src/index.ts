@@ -4,9 +4,11 @@ import dotenv from 'dotenv';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import { checkAuth } from './middleware/auth';
-import { taskController } from './controllers/taskController';
+import { checkAuth, AuthRequest } from './middleware/auth';
 import taskRoutes from './routes/tasks';
+import ideaRoutes from './routes/ideas';
+import rewardRoutes from './routes/rewards';
+import contactRoutes from './routes/contacts';
 
 // Загружаем переменные из .env
 dotenv.config();
@@ -107,9 +109,47 @@ app.post('/api/login', async (req: Request, res: Response): Promise<any> => {
 });
 
 // ==========================================
-// 3. ПОДКЛЮЧЕНИЕ МАРШРУТОВ (ROUTES)
+// 3. МАРШРУТ ИСТОРИИ БАЛЛОВ
+// ==========================================
+app.get('/api/transactions', checkAuth, async (req: Request | any, res: Response) => {
+  try {
+    const transactions = await prisma.transaction.findMany({
+      where: { userId: req.userId },
+      orderBy: { createdAt: 'desc' } // Сортируем: новые сверху
+    });
+    res.json(transactions);
+  } catch (error) {
+    res.status(500).json({ error: 'Не удалось получить историю' });
+  }
+});
+
+// ==========================================
+// 4. ПОДКЛЮЧЕНИЕ МАРШРУТОВ (ROUTES)
 // ==========================================
 app.use('/api/tasks', taskRoutes);
+app.use('/api/ideas', ideaRoutes);
+app.use('/api/rewards', rewardRoutes);
+app.use('/api/contacts', contactRoutes);
+
+// ==========================================
+// 5. НОВЫЙ ДЕНЬ (СБРОС ПРОГРЕССА)
+// ==========================================
+app.post('/api/start-new-day', checkAuth, async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const today = new Date().toISOString().split('T')[0]; // Получаем строку "2026-05-23"
+
+    // 1. Ищем или создаем чистую запись для базовых потребностей на СЕГОДНЯ
+    await prisma.dailyNeed.upsert({
+      where: { userId_date: { userId: req.userId!, date: today } },
+      update: {}, // Если уже есть - не трогаем
+      create: { userId: req.userId!, date: today, water: 0, food: 0, rest: 0 }
+    });
+
+    res.json({ message: 'Новый день начался! Поехали! 🌅' });
+  } catch (error) {
+    res.status(500).json({ error: 'Ошибка сброса дня' });
+  }
+});
 
 // Запуск сервера
 app.listen(PORT, () => {

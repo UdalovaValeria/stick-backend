@@ -23,6 +23,7 @@ model User {
   contacts    Contact[]
   mindfulness Session[]
   transactions Transaction[]
+  dailyNeeds DailyNeed[]
 }
 
 //  Облако тлеющих дел
@@ -106,4 +107,19 @@ model Transaction {
   type      String   // Тип: "earn" (заработал) или "spend" (потратил)
   note      String?  // Заметка: "За задачу: Разобрать носки"
   createdAt DateTime @default(now())
+}
+
+// 🔋 Базовые потребности (сохраняем каждый день)
+model DailyNeed {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  date      String   // Формат "YYYY-MM-DD", чтобы легко искать за сегодня
+  water     Int      @default(0) // Сколько стаканов выпито
+  food      Int      @default(0) // Сколько раз поел
+  rest      Int      @default(0) // Сколько раз отдохнул
+  createdAt DateTime @default(now())
+
+  // Уникальный индекс: у одного юзера может быть только ОДНА запись на конкретную дату
+  @@unique([userId, date])
 }
