@@ -101,7 +101,7 @@ export const taskController = {
       });
 
       // 3. Вызываем наш сервис для начисления баллов!
-      const points = await rewardService.awardTaskCompletion(req.userId!, taskId, task.difficulty);
+      const points = await rewardService.awardTaskCompletion(req.userId!, taskId, task.difficulty, task.title);
 
       res.json({ 
         message: `Молодец! Задача выполнена! 🎉`,

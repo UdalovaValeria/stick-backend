@@ -22,6 +22,7 @@ model User {
   ideas       Idea[]
   contacts    Contact[]
   mindfulness Session[]
+  transactions Transaction[]
 }
 
 //  Облако тлеющих дел
@@ -94,4 +95,15 @@ model Session {
   technique   String   // breathing, 5-4-3-2-1
   duration    Int      // в секундах
   createdAt   DateTime @default(now())
+}
+
+// 📜 История баллов (Транзакции)
+model Transaction {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  amount    Int      // Количество баллов (например: 15)
+  type      String   // Тип: "earn" (заработал) или "spend" (потратил)
+  note      String?  // Заметка: "За задачу: Разобрать носки"
+  createdAt DateTime @default(now())
 }
